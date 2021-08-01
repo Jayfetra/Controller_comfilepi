@@ -409,28 +409,8 @@ namespace ControllerPage.Constant
     };
 
 
-    public enum Error_Sensor_Controller
+    public enum Error_Sensor_Controller_save2
     {
-        /*
-        [Description("Connecting cable is not properly connected. Please Turn of power PT 2700 and check sensor connection")]
-        error001,
-        */
-        /* 
-         * 
-        [Description("Number of grains that were tested is less than two. Please reset with stop key")]
-        error010, ignore this
-        
-        [Description("No grain feed for more than 5 minutes. Please reset with stop key")]
-        error011, not via error message
-        [Description("Abnormal memory. Please turn off and on PT 2700")]
-        error040, not possible in comfile PI
-
-        [Description("Abnormal data. Please reset with stop key")]
-        error030, this is check sum not via 
-        
-        */
-
-        // Temp
         [Description("Error 020 - Temperature less than -20 celc. Please reset with stop key")]
         error1000, // 1000 ga mungkin penilaian 
         [Description("Error 022 - Temperature more than 70 celc. Please reset with stop key")]
@@ -453,6 +433,34 @@ namespace ControllerPage.Constant
         [Description("Error 103 - Abnormal PU-359 circuits 3. Reset with Stop key")]
         error00093,
         [Description("Error 104 - Reset with Stop key")]
+        error00094,
+    };
+
+
+    public enum Error_Sensor_Controller
+    {
+        [Description("Error 020_1")]
+        error1000, // 1000 ga mungkin penilaian 
+        [Description("Error 022")]
+        error1200, // 1200 ga mungkin nilai
+        [Description("Error 024")]
+        error1400, // 1400 ga mungkin nilai
+        [Description("Error 021_1")]
+        error1600, // 1600
+
+        [Description("Error 020_2")]
+        error020, // STX 020 ETX CheckSUM CR
+        [Description("Error 021_2")]
+        error021, // STX 070 ETX CheckSUM CR
+
+        // Check Command
+        [Description("Error 101")]
+        error00091,
+        [Description("Error 102")]
+        error00092,
+        [Description("Error 103")]
+        error00093,
+        [Description("Error 104")]
         error00094,
     };
 

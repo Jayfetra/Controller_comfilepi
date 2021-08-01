@@ -108,8 +108,8 @@ namespace ControllerPage
         }
         private void button3_Click_2(object sender, EventArgs e)
         {
-            this.Controls.Clear();// 'removes all the controls on the form
-            InitializeComponent();// 'load all the controls again
+            Sensor_input_Helper.Command_MoisturAggregate(mySerialPort);
+
             //Form1_Load(e, e);// 'Load everything in your form, load event again
         }
 
@@ -208,6 +208,8 @@ namespace ControllerPage
         {
             Sensor_input_Helper.Command_Stop(mySerialPort);
             bool_stop_click = true;
+            MyTimer.Enabled = false;
+            MyTimer.Stop();
         }
         private void Btn_Check_Click(object sender, EventArgs e)
         {
@@ -384,13 +386,25 @@ namespace ControllerPage
         private void button_CheckTemp_Click(object sender, EventArgs e)
         {
             Sensor_input_Helper.Command_CheckTemp(mySerialPort);
-            string result_temp = CheckTemp();
+            Thread.Sleep(2000);
+
+            try
+            {
+                checktemp_thread = new Thread(CheckTemp_Thread);
+                checktemp_thread.Start();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Sensor Failed to get temp");
+                Console.WriteLine(ex.Message);
+            }
+
 
         }
 
         #endregion
 
-        #region initial Function
+        #region Function
         private void Combobox_Mode_SelectedIndexChanged(object sender, EventArgs e)
         {
 
@@ -588,75 +602,7 @@ namespace ControllerPage
 
 
         }
-        private string CheckTemp()
-        {
-            temp_cond = true;
-            string Result_Parsing = "";
-            DateTime check_temp_5min_start = DateTime.Now;
-            while (temp_cond)
-            {
-                try
-                {
-                    Thread.Sleep(4000);// this solves the problem
-                    byte[] readBuffer = new byte[mySerialPort.ReadBufferSize];
-                    int readLen = mySerialPort.Read(readBuffer, 0, readBuffer.Length);
-                    string readStr = string.Empty;
-
-                    readStr = Encoding.UTF8.GetString(readBuffer, 0, readLen);
-                    readStr = readStr.Trim();
-                    Console.WriteLine("ReadStr adalah: " + readStr);
-
-                    string[] charactersToReplace = new string[] { @"r" };
-                    foreach (string s in charactersToReplace)
-                    {
-                        readStr = readStr.Replace(s, "");
-                    }
-
-                    char[] delimiter_r = { '\r' };
-                    string[] Measures_With_U = readStr.Split(delimiter_r);
-
-                    foreach (string measure in Measures_With_U)
-                    {
-                        bool isDigitPresent = measure.Any(c => char.IsDigit(c));
-                        if (isDigitPresent == true)
-                        {
-                            Result_Parsing = measure;
-                        }
-
-                    }
-                    //Result_Parsing = Measures_With_U.Last();
-
-                    if (check_Error(Result_Parsing) || check_5min_error(check_temp_5min_start))
-                    {
-                        error_for_button();
-                    }
-                    else
-                    {
-                        Result_Parsing = Result_Parsing.Substring(Result_Parsing.Length - 3);
-                        Result_Parsing = String.Concat(Result_Parsing.Substring(0, Result_Parsing.Length - 1)
-                                    , ".", Result_Parsing.Substring(Result_Parsing.Length - 1, 1));
-
-                        Temp_TextBox.Invoke((Action)delegate
-                        {
-                            Temp_TextBox.Text = Result_Parsing;
-                        });
-                        Sensor_input_Helper.Command_Stop(mySerialPort);
-                        temp_cond = false;
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    Trace.TraceError(ex.Message);
-                    Console.WriteLine(ex);
-                    //return "";
-                }
-            }
-
-            Console.WriteLine("Finsih_Check_Temp");
-            return Result_Parsing;
-            //Sensor_input_Helper.Command_Stop(mySerialPort);
-        }
+        
         private bool Start_Validation()
         {
             bool isvalid = false;
@@ -780,16 +726,104 @@ namespace ControllerPage
             return isvalid;
 
         }
-        private bool check_5min_error(DateTime start_count)
+
+        private string CheckTemp()
         {
-            bool status_check_5min = false;
-            TimeSpan Time_dif_check_5min = start_count - DateTime.Now;
-            if (Time_dif_check_5min.TotalSeconds > 60) // aslinya 300, sekrang tssting dlu
+            temp_cond = true;
+            string Result_Parsing = "";
+            DateTime check_temp_5min_start = DateTime.Now;
+            while (temp_cond)
             {
-                status_check_5min = true;
+                try
+                {
+                    Thread.Sleep(4000);// this solves the problem
+                    byte[] readBuffer = new byte[mySerialPort.ReadBufferSize];
+                    int readLen = mySerialPort.Read(readBuffer, 0, readBuffer.Length);
+                    string readStr = string.Empty;
+
+                    readStr = Encoding.UTF8.GetString(readBuffer, 0, readLen);
+                    readStr = readStr.Trim();
+                    Console.WriteLine("ReadStr adalah: " + readStr);
+
+                    string[] charactersToReplace = new string[] { @"r" };
+                    foreach (string s in charactersToReplace)
+                    {
+                        readStr = readStr.Replace(s, "");
+                    }
+
+                    char[] delimiter_r = { '\r' };
+                    string[] Measures_With_U = readStr.Split(delimiter_r);
+
+                    foreach (string measure in Measures_With_U)
+                    {
+                        bool isDigitPresent = measure.Any(c => char.IsDigit(c));
+                        if (isDigitPresent == true)
+                        {
+                            Result_Parsing = measure;
+                        }
+
+                    }
+                    //Result_Parsing = Measures_With_U.Last();
+                    int n = 0;
+                    bool check_if_number = int.TryParse(Result_Parsing, out n);
+                    if (Result_Parsing == "1000")
+                    {
+                        check_Error("1000");
+                        next_action_button(true);
+                        temp_cond = false;
+
+                    }
+                    else if (Result_Parsing == "1600")
+                    {
+                        check_Error("1600");
+                        next_action_button(true);
+                        temp_cond = false;
+
+                    }
+
+                    else if(
+                        Result_Parsing.Length == 4
+                        && Result_Parsing.Any(c => char.IsDigit(c))
+                        //&& check_if_number == true
+                        )
+                    {
+                        Result_Parsing = Result_Parsing.Substring(Result_Parsing.Length - 3);
+                        Result_Parsing = String.Concat(Result_Parsing.Substring(0, Result_Parsing.Length - 1)
+                                    , ".", Result_Parsing.Substring(Result_Parsing.Length - 1, 1));
+
+                        Temp_TextBox.Invoke((Action)delegate
+                        {
+                            Temp_TextBox.Text = Result_Parsing;
+                        });
+                        Sensor_input_Helper.Command_Stop(mySerialPort);
+                        temp_cond = false;
+                    }
+                    else
+                    {
+                        Console.WriteLine("this is checktemp else: " + Result_Parsing);
+                    }
+
+                }
+                catch (TimeoutException ex)
+                {
+                    MessageBox.Show(this, "Error 030 - no message during checking for 5 mins");
+                    //bool error = true;
+                    next_action_button(true);
+                    Console.WriteLine(ex.Message);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceError(ex.Message);
+                    Console.WriteLine(ex);
+                    //return "";
+                }
             }
-            return status_check_5min;
+
+            Console.WriteLine("Finsih_Check_Temp");
+            return Result_Parsing;
+            //Sensor_input_Helper.Command_Stop(mySerialPort);
         }
+
         private bool check_db_connection()
         {
             bool check_dbcon = false;
@@ -849,6 +883,8 @@ namespace ControllerPage
                     textBox_Sensor_Status.Text = "Online";
 
                 });
+
+                Sensor_input_Helper.Update_FinishBatch(Sensor_input_Helper.GetLocalIPAddress() ,batch_id);
             }
             else
             {
@@ -877,11 +913,6 @@ namespace ControllerPage
                 });
 
             }
-
-
-
-
-
 
         }
      
@@ -989,7 +1020,7 @@ namespace ControllerPage
            //if (Time_dif_check_5min.TotalMinutes > 1) // aslinya 300, sekrang tssting dlu
            {
                 MessageBox.Show(this, "Error 030 - no message during checking for 5 mins");
-                error_for_button();
+                
                 checkcommand = false;
                 Console.WriteLine("Check Thread Aborted");
                 Timer_5min_StopCheck.Enabled = false;
@@ -1043,28 +1074,104 @@ namespace ControllerPage
 
         #region Thread
 
-        [SecurityPermissionAttribute(SecurityAction.Demand, ControlThread = true)]
-        private void KillCheckThread()
+
+        private void CheckTemp_Thread()
         {
-            check_thread.Abort();
-            
-        }
-
-        private void stop_check_5min_thread(DateTime start_count)
-        {
-            MessageBox.Show(this, "Error 030 - no message during checking for 5 mins");
-            check_thread.Abort();
-
-
-            bool status_check_5min = false;
-            TimeSpan Time_dif_check_5min = start_count - DateTime.Now;
-            if (Time_dif_check_5min.TotalSeconds > 60) // aslinya 300, sekrang tssting dlu
+            temp_cond = true;
+            string Result_Parsing = "";
+            while (temp_cond)
             {
-                status_check_5min = true;
-            }
-            //return status_check_5min;
+                try
+                {
+                    Thread.Sleep(4000);// this solves the problem
+                    byte[] readBuffer = new byte[mySerialPort.ReadBufferSize];
+                    int readLen = mySerialPort.Read(readBuffer, 0, readBuffer.Length);
+                    string readStr = string.Empty;
 
+                    readStr = Encoding.UTF8.GetString(readBuffer, 0, readLen);
+                    readStr = readStr.Trim();
+                    Console.WriteLine("ReadStr adalah: " + readStr);
+
+                    string[] charactersToReplace = new string[] { @"r" };
+                    foreach (string s in charactersToReplace)
+                    {
+                        readStr = readStr.Replace(s, "");
+                    }
+
+                    char[] delimiter_r = { '\r' };
+                    string[] Measures_With_U = readStr.Split(delimiter_r);
+
+                    foreach (string measure in Measures_With_U)
+                    {
+                        bool isDigitPresent = measure.Any(c => char.IsDigit(c));
+                        if (isDigitPresent == true)
+                        {
+                            Result_Parsing = measure;
+                        }
+
+                    }
+                    //Result_Parsing = Measures_With_U.Last();
+                    int n = 0;
+                    bool check_if_number = int.TryParse(Result_Parsing, out n);
+                    if (check_Error(Result_Parsing))
+                    {
+                        next_action_button(true);
+                        Console.WriteLine("Error during check Temp");
+                        temp_cond = false;
+                    }
+                    else if (
+                        Result_Parsing.Length == 4
+                        && Result_Parsing.Any(c => char.IsDigit(c))
+                        && check_if_number == true
+
+                        )
+                    {
+                        Result_Parsing = Result_Parsing.Substring(Result_Parsing.Length - 3);
+                        Result_Parsing = String.Concat(Result_Parsing.Substring(0, Result_Parsing.Length - 1)
+                                    , ".", Result_Parsing.Substring(Result_Parsing.Length - 1, 1));
+
+                        Temp_TextBox.Invoke((Action)delegate
+                        {
+                            Temp_TextBox.Text = Result_Parsing;
+                        });
+                        Sensor_input_Helper.Command_Stop(mySerialPort);
+                        temp_cond = false;
+                    }
+
+                    else
+                    {
+                        Console.WriteLine("this is checktemp else: " + Result_Parsing);
+                    }
+
+                }
+                catch (TimeoutException ex)
+                {
+                    MessageBox.Show(this, "Error 030 - no message during checking for 5 mins");
+                    bool error = true;
+                    next_action_button(error);
+
+                    mySerialPort.DiscardInBuffer();
+                    mySerialPort.DiscardOutBuffer();
+
+                    stat_continue = false;
+                    start_next_cond = false;
+                    aggregate_cond = false;
+                    Console.WriteLine(ex.Message);
+                }
+
+                catch (Exception ex)
+                {
+                    Trace.TraceError(ex.Message);
+                    Console.WriteLine(ex);
+                    //return "";
+                }
+            }
+
+            Console.WriteLine("Finsih_Check_Temp");
+            //return Result_Parsing;
+            //Sensor_input_Helper.Command_Stop(mySerialPort);
         }
+
 
         private void Check_Thread()
         {
@@ -1118,7 +1225,7 @@ namespace ControllerPage
                     //if (check_Error(Result_Parsing) || check_5min_error(start_5min_check))
                     if (check_Error(Result_Parsing) )
                     {
-                        error_for_button();
+                        next_action_button(true);
                         checkcommand = false;
                     }
                     else if (Result_Parsing == "00090")
@@ -1127,7 +1234,8 @@ namespace ControllerPage
                         MessageBox.Show(this, "Connection Succeed");
                         checkcommand = false;
                         data_cleansing();
-                        Ready_To_Start_Button();
+                        next_action_button(false);
+
                     }
                     else
                     {
@@ -1140,7 +1248,8 @@ namespace ControllerPage
             catch(TimeoutException ex)
             {
                 MessageBox.Show(this, "Error 030 - no message during checking for 5 mins");
-                error_for_button();
+                next_action_button(true);
+
                 checkcommand = false;
                 //Console.WriteLine("Check Thread Aborted");
                 Console.WriteLine(ex.Message);
@@ -1238,8 +1347,6 @@ namespace ControllerPage
                                             Measure_Cond = false;
                                             countingbatch = false;
                                             bool_check_error = true;
-                                            MyTimer.Enabled = false;
-                                            MyTimer.Stop();
                                             Console.WriteLine("MyTimerStop");
                                         }
                                         // Finsih check error
@@ -1269,7 +1376,7 @@ namespace ControllerPage
                             else if (
                                 readStr.Trim().ToLower().Contains("r")
                                 //&& counter_data_reset > (int.Parse(ButtonNumPcs.Text) / 2)
-                                && counter_data_reset > 1
+                                && counter_data_reset >= 1
                                 && !readStr.Any(c => char.IsDigit(c))
                                 && countingbatch == true
                                 )
@@ -1431,9 +1538,10 @@ namespace ControllerPage
 
                                 Curr_Measure_TextBox.Invoke((Action)delegate
                                 {
-                                    Curr_Measure_TextBox.Text = Result_Parsing;
-                                    // Latest Average
+                                    //Curr_Measure_TextBox.Text = Result_Parsing.Format("0.0");
+                                    Curr_Measure_TextBox.Text = string.Format("{0:F1}", Result_Parsing);
                                 });
+
                                 total_average = 0;
                                 Current_Avg_TextBox.Invoke((Action)delegate
                                 {
@@ -1471,7 +1579,7 @@ namespace ControllerPage
                     Console.WriteLine("data_average count adalah: ", Data_Avg_Result.Count().ToString());
                     //Console.WriteLine("data_average count adalah: ", current_interval.ToString());
 
-                    if (Data_Avg_Result.Count() == TotalInterval || bool_check_error == true)
+                    if (Data_Avg_Result.Count() == TotalInterval || bool_check_error == true || bool_stop_click== true)
                     {
                         Console.WriteLine("End All Measurement ");
                         stat_continue = false;
@@ -1624,7 +1732,7 @@ namespace ControllerPage
 
                                 foreach (var Measure in Measures_With_U)
                                 {
-                                    
+
                                     Result_Parsing = GetWords(Measure).FirstOrDefault(); // hilangin ETX dan STX
                                     if (Result_Parsing != "" && Result_Parsing != null)
                                     {
@@ -1671,18 +1779,20 @@ namespace ControllerPage
                                 // klo ada measurement. mulai olah
                                 // masukin olah data yag lama 
                             }
-                            
-                            else if(
+
+                            else if ( // start new batch
                                 readStr.Trim().ToLower().Contains("r")
-                                && counter_data_reset > 8
+                                && counter_data_reset > 1
                                 && !readStr.Any(c => char.IsDigit(c))
                                 && countingbatch == true
+                                && bool_stop_click == false
                                 )
                             {
                                 Sensor_input_Helper.Command_Write(mySerialPort, "12598\r"); // max value
 
                                 Thread.Sleep(1000);
                                 Sensor_input_Helper.Command_Write(mySerialPort, ResultMeasure);
+                                Console.WriteLine("Next measurement Fixed Time");
                                 //start_next_cond = false;
                                 blink_timer = 1;
                                 timer_counter = 1;
@@ -1713,13 +1823,22 @@ namespace ControllerPage
                             MyTimer.Enabled = false;
                             MyTimer.Stop();
 
-                            Sensor_input_Helper.Command_Stop(mySerialPort);
-                            Thread.Sleep(3000);
-                            Sensor_input_Helper.Command_Stop(mySerialPort);
-                            Thread.Sleep(3000);
-                            Sensor_input_Helper.Command_Stop(mySerialPort);
-                            Thread.Sleep(3000);
-                            Console.WriteLine("Send Stop for fixed Time");
+                            if (!bool_stop_click)
+                            {
+                                Sensor_input_Helper.Command_Stop(mySerialPort);
+                                Thread.Sleep(3000);
+                                Sensor_input_Helper.Command_Stop(mySerialPort);
+                                Thread.Sleep(3000);
+                                Console.WriteLine("Send Stop for fixed Time");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Dont Send Stop for fixed Time");
+
+                            }
+                            //Sensor_input_Helper.Command_Stop(mySerialPort);
+                            //Thread.Sleep(3000);
+
                             string[] Measures_With_U = forever_str.Split(delimiter_r); // misahin antar nilai
                             counter_data_reset = 0;
                             foreach (var Measure in Measures_With_U)
@@ -1769,17 +1888,19 @@ namespace ControllerPage
                             #region Get Aggregate value
                             while (aggregate_cond)
                             {
-                                mySerialPort.DiscardOutBuffer();
-                                mySerialPort.DiscardInBuffer();
+                                /*
+                                //mySerialPort.DiscardOutBuffer();
+                                //mySerialPort.DiscardInBuffer();
                                 readBuffer = new byte[mySerialPort.ReadBufferSize];
                                 readLen = mySerialPort.Read(readBuffer, 0, readBuffer.Length);
                                 readStr = string.Empty;
                                 readStr = Encoding.UTF8.GetString(readBuffer, 0, readLen);
                                 readStr = readStr.Trim();
+                                */
 
                                 Console.WriteLine("Start Aggregate_cond");
                                 Sensor_input_Helper.Command_MoisturAggregate(mySerialPort);
-                                Thread.Sleep(2000);// this solves the problem
+                                Thread.Sleep(4000);// this solves the problem
                                 Result_Parsing = string.Empty;
                                 readBuffer = new byte[mySerialPort.ReadBufferSize];
                                 readLen = mySerialPort.Read(readBuffer, 0, readBuffer.Length);
@@ -1832,8 +1953,10 @@ namespace ControllerPage
 
                                         Curr_Measure_TextBox.Invoke((Action)delegate
                                         {
-                                            Curr_Measure_TextBox.Text = Result_Parsing;
+                                            //Curr_Measure_TextBox.Text = Result_Parsing.Format("0.0");
+                                            Curr_Measure_TextBox.Text = string.Format("{0:F1}", Result_Parsing);
                                         });
+
                                         total_average = 0;
                                         Current_Avg_TextBox.Invoke((Action)delegate
                                         {
@@ -1900,15 +2023,6 @@ namespace ControllerPage
                             start_next_cond = false;
                             aggregate_cond = false;
                             Measure_Cond = false;
-
-                            if (bool_check_error)
-                            {
-                                error_for_button();
-                            }
-                            else
-                            {
-                                Ready_To_Start_Button();
-                            }
 
                             next_action_button(bool_check_error);
 
@@ -2018,7 +2132,7 @@ namespace ControllerPage
                     Thread.Sleep(3000);
                     while (Measure_Cond == true)
                     {
-                        Thread.Sleep(1000);// this solves the problem
+                        Thread.Sleep(2000);// this solves the problem
                         readBuffer = new byte[mySerialPort.ReadBufferSize];
                         readLen = mySerialPort.Read(readBuffer, 0, readBuffer.Length);
                         //string readStr = string.Empty;
@@ -2053,14 +2167,12 @@ namespace ControllerPage
                                     {
                                         // check error
                                         Console.WriteLine("Result_Parsing & Batch_ID adalah: " + Result_Parsing + " " + batch_id.ToString());
-                                        if (check_Error_during_measurement(Result_Parsing, batch_id) || check_5min_error(Date_Start_5min_FixedPieces))
+                                        if (check_Error_during_measurement(Result_Parsing, batch_id))
                                         {
                                             aggregate_cond = false;
                                             Measure_Cond = false;
                                             countingbatch = false;
                                             bool_check_error = true;
-                                            MyTimer.Enabled = false;
-                                            MyTimer.Stop();
 
                                         }
                                         // FInsih check error
@@ -2088,7 +2200,9 @@ namespace ControllerPage
 
                             else if (
                                 readStr.Trim().ToLower().Contains("r")
-                                && counter_data_reset > (int.Parse(ButtonNumPcs.Text) / 2)
+                                //&& counter_data_reset > (int.Parse(ButtonNumPcs.Text) / 2)
+                                && counter_data_reset >= 1
+
                                 && !readStr.Any(c => char.IsDigit(c))
                                 && countingbatch == true
                                 )
@@ -2096,24 +2210,7 @@ namespace ControllerPage
                                 //counter_data = 0;
                                 counter_data_reset = 0;
                                 Console.WriteLine("Forever_str original adalah: " + forever_str);
-
-                                try
-                                {
-                                    //Pass the filepath and filename to the StreamWriter Constructor
-                                    StreamWriter sw = new StreamWriter("C:\\forever_str.txt");
-                                    //Write a line of text
-                                    sw.WriteLine(forever_str);
-                                    sw.Close();
-                                }
-                                catch (Exception e)
-                                {
-                                    Console.WriteLine("Exception: " + e.Message);
-                                }
-                                finally
-                                {
-                                    Console.WriteLine("Executing finally block.");
-                                }
-
+                                
                                 string[] Measures_With_U = forever_str.Split(delimiter_r); // misahin antar nilai
 
                                 foreach (var Measure in Measures_With_U)
@@ -2213,7 +2310,7 @@ namespace ControllerPage
                         Result_Parsing = string.Empty;
                         Console.WriteLine("Start Aggregate_cond");
                         Sensor_input_Helper.Command_MoisturAggregate(mySerialPort);
-                        Thread.Sleep(2000);// this solves the problem
+                        Thread.Sleep(4000);// this solves the problem
                         readBuffer = new byte[mySerialPort.ReadBufferSize];
                         readLen = mySerialPort.Read(readBuffer, 0, readBuffer.Length);
                         readStr = string.Empty;
@@ -2257,17 +2354,20 @@ namespace ControllerPage
                                 Result_Parsing = aggregate_value_string.Substring(5, 3);
                                 Result_Parsing = String.Concat(Result_Parsing.Substring(0, Result_Parsing.Length - 1)
                                     , ".", Result_Parsing.Substring(Result_Parsing.Length - 1, 1));
-                                Result_Parsing = (double.Parse(Result_Parsing) + bias_value).ToString();
+                                Result_Parsing = (double.Parse(Result_Parsing) + bias_value).ToString("0.0");
 
                                 Data_Avg_Result.Add(new data_measure_2(100, Result_Parsing, (DateTime.Now).ToString()));
                                 aggregate_cond = false;
 
 
+                                
                                 Curr_Measure_TextBox.Invoke((Action)delegate
                                 {
-                                    Curr_Measure_TextBox.Text = Result_Parsing;
-                                    // Latest Average
+                                    //Curr_Measure_TextBox.Text = Result_Parsing.Format("0.0");
+                                    Curr_Measure_TextBox.Text = string.Format("{0:F1}", Result_Parsing);
                                 });
+
+
                                 total_average = 0;
                                 Current_Avg_TextBox.Invoke((Action)delegate
                                 {

@@ -79,6 +79,7 @@ namespace ControllerPage.Helper
                 mySerialPort.Write(_hexval, 0, 1);
                 //Thread.Sleep(10);
             }
+            Console.WriteLine("Send command to sensor: " + data);
         }
         public static void Command_CheckData(SerialPort mySerialPort)
         {
@@ -93,6 +94,7 @@ namespace ControllerPage.Helper
                 mySerialPort.Write(_hexval, 0, 1);
                 //Thread.Sleep(10);
             }
+            Console.WriteLine("Send command to sensor: " + data);
         }
         public static void Command_Stop(SerialPort mySerialPort)
         {
@@ -107,6 +109,7 @@ namespace ControllerPage.Helper
                 mySerialPort.Write(_hexval, 0, 1);
                 //Thread.Sleep(10);
             }
+            Console.WriteLine("Send command to sensor: " + data);
         }
 
         public static void Command_CheckTemp(SerialPort mySerialPort)
@@ -122,6 +125,7 @@ namespace ControllerPage.Helper
                 mySerialPort.Write(_hexval, 0, 1);
                 //Thread.Sleep(10);
             }
+            Console.WriteLine("Send command to sensor: " + data);
         }
 
 
@@ -162,6 +166,7 @@ namespace ControllerPage.Helper
                 mySerialPort.Write(_hexval, 0, 1);
                 //Thread.Sleep(10);
             }
+            Console.WriteLine("Send Command: " + input);
 
         }
         public static void Command_MoisturAggregate(SerialPort mySerialPort)
@@ -177,6 +182,8 @@ namespace ControllerPage.Helper
                 mySerialPort.Write(_hexval, 0, 1);
                 //Thread.Sleep(10);
             }
+            Console.WriteLine("Send command to sensor: " + data);
+
         }
         public static List<string> Get_List_Waiting_Time_Interval()
         {
@@ -575,7 +582,7 @@ namespace ControllerPage.Helper
         }
 
 
-        public static void Update_FinishBatch(string IP_Address_varinput, int Batch_ID, string Error_Code)
+        public static void Update_FinishBatch(string IP_Address_varinput, int Batch_ID)
         {
             string database = "sensor_database";
             string user = "root";
