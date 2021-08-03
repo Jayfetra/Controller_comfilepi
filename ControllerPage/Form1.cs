@@ -108,8 +108,8 @@ namespace ControllerPage
         }
         private void button3_Click_2(object sender, EventArgs e)
         {
-            Sensor_input_Helper.Command_MoisturAggregate(mySerialPort);
-
+            //Sensor_input_Helper.Command_MoisturAggregate(mySerialPort);
+            Sensor_input_Helper.changeip();
             //Form1_Load(e, e);// 'Load everything in your form, load event again
         }
 

@@ -46,12 +46,60 @@ namespace ControllerPage.Helper
                 {
                     return ip.ToString();
                 }
-            }
-
-
-            
-         
+            }         
             throw new Exception("No network adapters with an IPv4 address in the system!");
+        }
+        public static string GetLocalIPAddress2()
+        {
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return ip.ToString().Substring(ip.ToString().Length - 2).Replace(".", string.Empty);
+                }
+            }
+            throw new Exception("No network adapters with an IPv4 address in the system!");
+        }
+        public static void changeip()
+        {
+            //var existing_ip = textBox_sensornumber.Text;
+            //var setting_ip = ipaddressset.Value;
+            var existing_ip = "2";
+            var setting_ip = "6";
+
+
+            ProcessStartInfo procStartInfo = new ProcessStartInfo("/bin/sudo"
+                , "/usr/bin/sed -i 's/static ip_address=192.168.1." 
+                + existing_ip 
+                + "/static ip_address=192.168.1." + setting_ip 
+                + "/' /etc/dhcpcd.conf");
+            procStartInfo.RedirectStandardOutput = true;
+            procStartInfo.UseShellExecute = false;
+            procStartInfo.CreateNoWindow = true;
+
+            System.Diagnostics.Process proc = new System.Diagnostics.Process();
+            proc.StartInfo = procStartInfo;
+            proc.Start();
+
+            ProcessStartInfo procStartInfo2 = new ProcessStartInfo("/bin/sudo", "service dhcpcd restart");
+            procStartInfo2.RedirectStandardOutput = true;
+            procStartInfo2.UseShellExecute = false;
+            procStartInfo2.CreateNoWindow = true;
+
+            System.Diagnostics.Process proc2 = new System.Diagnostics.Process();
+            proc2.StartInfo = procStartInfo2;
+            proc2.Start();
+            MessageBox.Show("Change Sensor Number Successfull, System will reboot");
+
+            ProcessStartInfo procStartInfo3 = new ProcessStartInfo("/bin/sudo", "reboot");
+            procStartInfo3.RedirectStandardOutput = true;
+            procStartInfo3.UseShellExecute = false;
+            procStartInfo3.CreateNoWindow = true;
+
+            System.Diagnostics.Process proc3 = new System.Diagnostics.Process();
+            proc3.StartInfo = procStartInfo3;
+            proc3.Start();
         }
         public static List<String> get_List_Error_Code()
         {
