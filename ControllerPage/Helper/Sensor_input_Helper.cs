@@ -125,7 +125,7 @@ namespace ControllerPage.Helper
             {
                 byte[] _hexval = new byte[] { hexval };     // need to convert byte // to byte[] to write
                 mySerialPort.Write(_hexval, 0, 1);
-                //Thread.Sleep(10);
+                //Thread.Sleep(10);er
             }
             Console.WriteLine("Send command to sensor: " + data);
         }
@@ -387,13 +387,6 @@ namespace ControllerPage.Helper
 
         public static void MySQL_ConnectDatabase_test(string connection_string_input)
         {
-            //string server = "Localhost_test";
-
-            //string server = "103.224.212.219";
-            //string server = "192.168.0.6";
-            //string server = "raspberrypi";
-            
-            //string server = "Localhost via UNIX socket";
             MySqlConnection connection;
             string server = GetLocalIPAddress();
             string database = "sensor_database";
@@ -405,12 +398,6 @@ namespace ControllerPage.Helper
             string connectionString;
 
             connectionString = String.Format("server={0};port={1};user id={2}; password={3}; database={4}; SslMode={5}", server, port, user, password, database, sslM);
-
-            /*
-            connectionString = String.Format("server={0};port={1};user id={2};password={3}" +
-                "; database={4}", server, port, user, password, database);
-            */
-
             connection = new MySqlConnection(connection_string_input);
 
             try
@@ -485,18 +472,12 @@ namespace ControllerPage.Helper
             }
 
         }
-        public static void MySql_Insert_Measure(int Batch_ID_varinput, int PerBatch_ID_varinput, float measure_result_varinput, DateTime Created_On_varinput, int IsAverage_varinput)
+        public static void MySql_Insert_Measure(int Batch_ID_varinput, int PerBatch_ID_varinput
+            , float measure_result_varinput, DateTime Created_On_varinput, int IsAverage_varinput, int Interval_varinput)
         {
-            //string server = "localhost";
-            //MySqlConnection connection;
-            //string server = "localhost";
             string server = GetLocalIPAddress();
-
-            //string server = "192.168.0.6";
-            
             string database = "sensor_database";
             string user = "root";
-            //string password = "admin";
             string password = "raspberry";
             string port = "3306";
             string sslM = "none";
@@ -515,11 +496,12 @@ namespace ControllerPage.Helper
                 command.Parameters.Add(new MySqlParameter("measure_result_var", measure_result_varinput));
                 command.Parameters.Add(new MySqlParameter("Created_On_var", Created_On_varinput));
                 command.Parameters.Add(new MySqlParameter("IsAverage_var", IsAverage_varinput));
-
+                command.Parameters.Add(new MySqlParameter("Interval_var", Interval_varinput));
 
                 command.Connection.Open();
                 var result = command.ExecuteNonQuery();
                 command.Connection.Close();
+
             }
 
         }

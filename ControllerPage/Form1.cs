@@ -835,6 +835,7 @@ namespace ControllerPage
             return check_dbcon;
 
         }
+
         private void next_action_button(bool bool_check_error_next)
         {
 
@@ -843,6 +844,8 @@ namespace ControllerPage
 
             if (!bool_check_error_next)
             {
+                
+
                 Btn_Start.Invoke((Action)delegate
                 {
                     //Curr_Kernel_TextBox.Text = (counter_data + 1).ToString();
@@ -853,13 +856,11 @@ namespace ControllerPage
                     //Curr_Kernel_TextBox.Text = (counter_data + 1).ToString();
                     Btn_Stop.Enabled = true;
                 });
-
                 Btn_CheckTemp.Invoke((Action)delegate
                 {
                     //Curr_Kernel_TextBox.Text = (counter_data + 1).ToString();
                     Btn_CheckTemp.Enabled = true;
                 });
-
                 Btn_Check.Invoke((Action)delegate
                 {
                     //Curr_Kernel_TextBox.Text = (counter_data + 1).ToString();
@@ -870,24 +871,27 @@ namespace ControllerPage
                     //Curr_Kernel_TextBox.Text = (counter_data + 1).ToString();
                     Combobox_Mode.Enabled = true;
                 });
-
                 Combobox_ComPort.Invoke((Action)delegate
                 {
                     //Curr_Kernel_TextBox.Text = (counter_data + 1).ToString();
                     Combobox_ComPort.Enabled = true;
                 });
-
                 textBox_Sensor_Status.Invoke((Action)delegate
                 {
                     //Curr_Kernel_TextBox.Text = (counter_data + 1).ToString();
                     textBox_Sensor_Status.Text = "Online";
 
                 });
-
                 Sensor_input_Helper.Update_FinishBatch(Sensor_input_Helper.GetLocalIPAddress() ,batch_id);
+
             }
             else
             {
+                Sensor_input_Helper.Command_Stop(mySerialPort);
+                Thread.Sleep(2000);
+                Sensor_input_Helper.Command_Stop(mySerialPort);
+                Thread.Sleep(2000);
+
                 Btn_Start.Invoke((Action)delegate
                 {
                     Btn_Start.Enabled = false;
@@ -900,7 +904,6 @@ namespace ControllerPage
                 {
                     Btn_CheckTemp.Enabled = false;
                 });
-
                 Btn_Check.Invoke((Action)delegate
                 {
                     Btn_Check.Enabled = true;
@@ -1171,8 +1174,6 @@ namespace ControllerPage
             //return Result_Parsing;
             //Sensor_input_Helper.Command_Stop(mySerialPort);
         }
-
-
         private void Check_Thread()
         {
             try
@@ -1385,22 +1386,6 @@ namespace ControllerPage
                                 counter_data_reset = 0;
                                 Console.WriteLine("Forever_str original adalah: " + forever_str);
 
-                                /*
-                                try
-                                {
-                                    StreamWriter sw = new StreamWriter("C:\\forever_str.txt");
-                                    sw.WriteLine(forever_str);
-                                    sw.Close();
-                                }
-                                catch (Exception e)
-                                {
-                                    Console.WriteLine("Exception: " + e.Message);
-                                }
-                                finally
-                                {
-                                    Console.WriteLine("Executing finally block.");
-                                }
-                                */
                                 string[] Measures_With_U = forever_str.Split(delimiter_r); // misahin antar nilai
 
                                 foreach (var Measure in Measures_With_U)
@@ -1437,7 +1422,8 @@ namespace ControllerPage
                                         Console.WriteLine("nilai measure forever str parsing result adalah: " + Result_Parsing); // ganti jadi
 
                                         float Result_Parsing_input = float.Parse(Result_Parsing);
-                                        Sensor_input_Helper.MySql_Insert_Measure(batch_id, counter_data + 1, Result_Parsing_input, DateTime.Now, 0);
+                                        Sensor_input_Helper.MySql_Insert_Measure(batch_id, counter_data + 1, Result_Parsing_input
+                                            , DateTime.Now, 0, current_interval + 1);
                                         counter_data_reset = counter_data_reset + 1;
                                         //readStr = string.Empty;
 
@@ -1562,7 +1548,8 @@ namespace ControllerPage
                                 });
 
                                 //loat Result_Parsing_input = float.Parse(Result_Parsing);
-                                Sensor_input_Helper.MySql_Insert_Measure(batch_id, 1000 + current_interval + 1, float.Parse(Result_Parsing), DateTime.Now, 1);
+                                Sensor_input_Helper.MySql_Insert_Measure(batch_id, 1000 + current_interval + 1
+                                    , float.Parse(Result_Parsing), DateTime.Now, 1, current_interval + 1);
 
                                 Console.WriteLine("Finish Aggregate");
                                 readStr = string.Empty;
@@ -1870,7 +1857,7 @@ namespace ControllerPage
                                     Console.WriteLine("nilai measure forever str parsing result adalah: " + Result_Parsing); // ganti jadi
 
                                     float Result_Parsing_input = float.Parse(Result_Parsing);
-                                    Sensor_input_Helper.MySql_Insert_Measure(batch_id, counter_data + 1, Result_Parsing_input, DateTime.Now, 0);
+                                    Sensor_input_Helper.MySql_Insert_Measure(batch_id, counter_data + 1, Result_Parsing_input, DateTime.Now, 0, current_interval + 1);
                                     //counter_data_reset = counter_data_reset + 1;
                                     //readStr = string.Empty;
                                     Curr_Kernel_TextBox.Invoke((Action)delegate
@@ -1888,15 +1875,6 @@ namespace ControllerPage
                             #region Get Aggregate value
                             while (aggregate_cond)
                             {
-                                /*
-                                //mySerialPort.DiscardOutBuffer();
-                                //mySerialPort.DiscardInBuffer();
-                                readBuffer = new byte[mySerialPort.ReadBufferSize];
-                                readLen = mySerialPort.Read(readBuffer, 0, readBuffer.Length);
-                                readStr = string.Empty;
-                                readStr = Encoding.UTF8.GetString(readBuffer, 0, readLen);
-                                readStr = readStr.Trim();
-                                */
 
                                 Console.WriteLine("Start Aggregate_cond");
                                 Sensor_input_Helper.Command_MoisturAggregate(mySerialPort);
@@ -1971,7 +1949,7 @@ namespace ControllerPage
                                         });
                                         
                                         //loat Result_Parsing_input = float.Parse(Result_Parsing);
-                                        Sensor_input_Helper.MySql_Insert_Measure(batch_id, 1000 + current_interval + 1, float.Parse(Result_Parsing), DateTime.Now, 1);
+                                        Sensor_input_Helper.MySql_Insert_Measure(batch_id, 1000 + current_interval + 1, float.Parse(Result_Parsing), DateTime.Now, 1, current_interval + 1);
 
                                         Console.WriteLine("Finish Aggregate");
                                         readStr = string.Empty;
@@ -2041,16 +2019,12 @@ namespace ControllerPage
                     {
                         //Sensor_input_Helper.Command_Write(mySerialPort, "12598\r"); // max value
                         Sensor_input_Helper.Command_Write(mySerialPort, "10192\r"); // max value
-
                         Thread.Sleep(1000);
                         Sensor_input_Helper.Command_Write(mySerialPort, ResultMeasure);
                         current_interval++;
                         
-                        
-                        //start_next_cond = false;
                         blink_timer = 1;
                         timer_counter = 1;
-                        //counter_data_reset = 0;
                         readStr = string.Empty;
                     }
                     #endregion
@@ -2250,7 +2224,7 @@ namespace ControllerPage
                                         Console.WriteLine("nilai measure forever str parsing result adalah: " + Result_Parsing); // ganti jadi
 
                                         float Result_Parsing_input = float.Parse(Result_Parsing);
-                                        Sensor_input_Helper.MySql_Insert_Measure(batch_id, counter_data + 1, Result_Parsing_input, DateTime.Now, 0);
+                                        Sensor_input_Helper.MySql_Insert_Measure(batch_id, counter_data + 1, Result_Parsing_input, DateTime.Now, 0,1);
                                         counter_data_reset = counter_data_reset + 1;
                                         //readStr = string.Empty;
 
@@ -2387,7 +2361,7 @@ namespace ControllerPage
                                 });
 
                                 //loat Result_Parsing_input = float.Parse(Result_Parsing);
-                                Sensor_input_Helper.MySql_Insert_Measure(batch_id, 1000 + current_interval + 1, float.Parse(Result_Parsing), DateTime.Now, 1);
+                                Sensor_input_Helper.MySql_Insert_Measure(batch_id, 1000 + current_interval + 1, float.Parse(Result_Parsing), DateTime.Now, 1,1);
 
                                 Console.WriteLine("Finish Aggregate");
                                 readStr = string.Empty;
